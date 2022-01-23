@@ -1,4 +1,4 @@
-#  EXAMPLE  - 1 || MICROSERVICE
+#  EXAMPLE  - 2 || MICROSERVICE WITH MONGODB - SHARD
 TO RUN
 ``` sh 
 docker-compose build 
