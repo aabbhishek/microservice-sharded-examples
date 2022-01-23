@@ -1,0 +1,93 @@
+version: '2'
+
+services:
+  mongodb-sharded:
+    image: docker.io/bitnami/mongodb-sharded:4.4
+    environment:
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-sharded
+      - MONGODB_SHARDING_MODE=mongos
+      - MONGODB_CFG_PRIMARY_HOST=mongodb-cfg
+      - MONGODB_CFG_REPLICA_SET_NAME=cfgreplicaset
+      - MONGODB_REPLICA_SET_KEY=replicasetkey123
+      - MONGODB_ROOT_PASSWORD=password123
+    volumes:
+      - "./mongo-sharded/db:/data/db"
+    ports:
+      - "27017:27017"
+
+  mongodb-shard0:
+    image: docker.io/bitnami/mongodb-sharded:4.4
+    environment:
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-shard0
+      - MONGODB_SHARDING_MODE=shardsvr
+      - MONGODB_MONGOS_HOST=mongodb-sharded
+      - MONGODB_ROOT_PASSWORD=password123
+      - MONGODB_REPLICA_SET_MODE=primary
+      - MONGODB_REPLICA_SET_KEY=replicasetkey123
+      - MONGODB_REPLICA_SET_NAME=shard0
+    volumes:
+      - 'shard0_data:/bitnami'
+      - "./mongo-sharded-0/db:/data/db"
+
+  mongodb-cfg:
+    image: docker.io/bitnami/mongodb-sharded:4.4
+    environment:
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-cfg
+      - MONGODB_SHARDING_MODE=configsvr
+      - MONGODB_ROOT_PASSWORD=password123
+      - MONGODB_REPLICA_SET_MODE=primary
+      - MONGODB_REPLICA_SET_KEY=replicasetkey123
+      - MONGODB_REPLICA_SET_NAME=cfgreplicaset
+    volumes:
+      - 'cfg_data:/bitnami'
+      - "./mongo-sharded-1/db:/data/db"
+
+  nginx:
+    build: ./nginx
+    container_name: ms_nginx
+    restart: always
+    depends_on:
+        - store
+        - users
+    links:
+        - store
+        - users
+    ports:
+        - "80:80"
+
+  store:
+    build: ./store
+    container_name: ms_store
+    #depends_on:
+    #    - "mongodb-sharded"
+    #environment:
+    #    - loglevel=none
+    #links:
+    #    - "mongo:mongo"
+    volumes:
+        - "./store:/src/app"
+    working_dir: "/src/app"
+    ports:
+        - "3001:3000"
+    # command: npm run start
+    command: npm run start
+
+  users:
+    build: ./users
+    container_name: ms_users
+    #depends_on:
+    #    - "mongodb-sharded"
+    #links:
+    #    - neo4j
+    volumes:
+        - "./users:/src/app"
+    working_dir: "/src/app"
+    ports:
+        - "3002:3000"
+    command: npm start
+
+volumes:
+  shard0_data:
+    driver: local
+  cfg_data:
+    driver: local
