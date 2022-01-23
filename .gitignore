@@ -1,2 +1,2 @@
-store/*
-users/*
+store/node_modules/*
+users/node_modules/*
